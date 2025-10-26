@@ -1,0 +1,138 @@
+###########################################################
+#
+# CIA 402 PV example snippet Hal 
+#
+###########################################################
+
+###########################################################
+# Setup
+###########################################################
+
+loadrt [KINS]KINEMATICS
+loadrt [EMCMOT]EMCMOT servo_period_nsec=[EMCMOT]SERVO_PERIOD num_joints=[KINS]JOINTS num_spindles=1
+
+loadusr -W lcec_conf ethercat-conf.xml
+loadrt lcec
+loadrt cia402 names=cia402.X,cia402.Z
+loadrt cia402pv names=cia402pv.Spindle
+
+
+###########################################################
+# Functions servo-thread
+###########################################################
+
+addf lcec.read-all servo-thread
+addf cia402.X.read-all servo-thread
+addf cia402.Z.read-all servo-thread
+addf cia402pv.Spindle.read-all servo-thread
+
+addf motion-command-handler servo-thread
+addf motion-controller servo-thread
+
+addf cia402.X.write-all servo-thread
+addf cia402.Z.write-all servo-thread
+addf cia402pv.Spindle.write-all servo-thread
+addf lcec.write-all servo-thread
+
+#########################################
+#nets
+#########################################
+net emc-enable => iocontrol.0.emc-enable-in
+sets emc-enable 1
+
+#config X
+setp cia402.X.csp-mode 1
+setp cia402.X.pos-scale 3600
+
+#from servo(ethercat) to cia402
+net x-statusword      lcec.0.X.cia-statusword => cia402.X.statusword
+net x-opmode-display  lcec.0.X.opmode-display => cia402.X.opmode-display
+net x-drv-act-pos     lcec.0.X.actual-position => cia402.X.drv-actual-position
+net x-drv-act-velo    lcec.0.X.actual-velocity => cia402.X.drv-actual-velocity
+
+#from cia402 to servo(ethercat) 
+net x-controlword         cia402.X.controlword => lcec.0.X.cia-controlword
+net x-modes-of-operation  cia402.X.opmode => lcec.0.X.opmode
+net x-drv-target-pos      cia402.X.drv-target-position => lcec.0.X.target-position
+net x-drv-target-velo     cia402.X.drv-target-velocity => lcec.0.X.target-velocity
+
+#from motion to cia
+net x-enable    <= joint.0.amp-enable-out => cia402.X.enable
+net x-amp-fault => joint.0.amp-fault-in   <= cia402.X.drv-fault
+net x-pos-cmd   <= joint.0.motor-pos-cmd  => cia402.X.pos-cmd
+net x-pos-fb    => joint.0.motor-pos-fb   <= cia402.X.pos-fb
+
+#homing
+#net x-home-index <= joint.0.index-enable  => cia402.X.home
+
+#config Z
+setp cia402.Z.csp-mode 1
+setp cia402.Z.pos-scale 3600
+
+#from servo(ethercat) to cia402
+net z-statusword      lcec.0.Z.cia-statusword => cia402.Z.statusword
+net z-opmode-display  lcec.0.Z.opmode-display => cia402.Z.opmode-display
+net z-drv-act-pos     lcec.0.Z.actual-position => cia402.Z.drv-actual-position
+net z-drv-act-velo    lcec.0.Z.actual-velocity => cia402.Z.drv-actual-velocity
+
+#from cia402 to servo(ethercat) 
+net z-controlword         cia402.Z.controlword => lcec.0.Z.cia-controlword
+net z-modes-of-operation  cia402.Z.opmode => lcec.0.Z.opmode
+net z-drv-target-pos      cia402.Z.drv-target-position => lcec.0.Z.target-position
+net z-drv-target-velo     cia402.Z.drv-target-velocity => lcec.0.Z.target-velocity
+
+#from motion to cia
+net z-enable    <= joint.1.amp-enable-out => cia402.Z.enable
+net z-amp-fault => joint.1.amp-fault-in   <= cia402.Z.drv-fault
+net z-pos-cmd   <= joint.1.motor-pos-cmd  => cia402.Z.pos-cmd
+net z-pos-fb    => joint.1.motor-pos-fb   <= cia402.Z.pos-fb
+
+#homing
+#net z-home-index <= joint.1.index-enable  => cia402.Z.home
+
+#config Spindle
+setp cia402pv.Spindle.pv-mode 1
+setp cia402pv.Spindle.velo-scale 2000
+setp cia402pv.Spindle.acceleration 100
+setp cia402pv.Spindle.deceleration 100
+setp cia402pv.Spindle.quickstop-acceleration 300
+
+#from servo(ethercat) to cia402pv
+net Spindle-statusword      lcec.0.Spindle.cia-statusword => cia402pv.Spindle.statusword
+net Spindle-opmode-display  lcec.0.Spindle.opmode-display => cia402pv.Spindle.opmode-display
+net Spindle-drv-act-pos     lcec.0.Spindle.actual-position => cia402pv.Spindle.drv-actual-position
+
+#from cia402pv to servo(ethercat) 
+net Spindle-controlword         cia402pv.Spindle.controlword         => lcec.0.Spindle.cia-controlword
+net Spindle-modes-of-operation  cia402pv.Spindle.opmode              => lcec.0.Spindle.opmode
+net Spindle-drv-target-vel      cia402pv.Spindle.drv-target-velocity => lcec.0.Spindle.target-velocity
+net Spindle-drv-acc             cia402pv.Spindle.drv-acceleration    => lcec.0.Spindle.acceleration
+net Spindle-drv-dec             cia402pv.Spindle.drv-deceleration    => lcec.0.Spindle.deceleration
+
+#from motion to cia
+setp cia402pv.Spindle.enable 1
+# cia402pv.Spindle.drv-fault
+
+# ---setup spindle control signals---
+
+net spindle-vel-cmd-rps        <=  spindle.0.speed-out-rps
+net spindle-vel-cmd-rps-abs    <=  spindle.0.speed-out-rps-abs
+net spindle-vel-cmd-rpm        <=  spindle.0.speed-out
+net spindle-vel-cmd-rpm-abs    <=  spindle.0.speed-out-abs
+net spindle-enable             <=  spindle.0.on
+net spindle-cw                 <=  spindle.0.forward
+net spindle-ccw                <=  spindle.0.reverse
+net spindle-brake              <=  spindle.0.brake
+net spindle-revs               =>  spindle.0.revs
+net spindle-at-speed           =>  spindle.0.at-speed
+net spindle-vel-fb-rps         =>  spindle.0.speed-in
+#net spindle-index-enable      <=>  spindle.0.index-enable
+
+net machine-is-on             => cia402pv.Spindle.enable
+#net spindle-cw                => cia402pv.Spindle.cmd-forward
+#net spindle-ccw               => cia402pv.Spindle.cmd-reverse
+net spindle-enable            => cia402pv.Spindle.run
+net spindle-at-speed          <= cia402pv.Spindle.stat-at-speed
+net spindle-vel-cmd-rps-abs   => cia402pv.Spindle.velocity-cmd
+net spindle-vel-fb-rps        => cia402pv.Spindle.velocity-fb
+
