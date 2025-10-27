@@ -98,9 +98,10 @@ setp cia402pv.Spindle.deceleration 100
 setp cia402pv.Spindle.quickstop-acceleration 300
 
 #from servo(ethercat) to cia402pv
-net Spindle-statusword      lcec.0.Spindle.cia-statusword => cia402pv.Spindle.statusword
-net Spindle-opmode-display  lcec.0.Spindle.opmode-display => cia402pv.Spindle.opmode-display
+net Spindle-statusword      lcec.0.Spindle.cia-statusword  => cia402pv.Spindle.statusword
+net Spindle-opmode-display  lcec.0.Spindle.opmode-display  => cia402pv.Spindle.opmode-display
 net Spindle-drv-act-pos     lcec.0.Spindle.actual-position => cia402pv.Spindle.drv-actual-position
+net Spindle-drv-act-vel     lcec.0.Spindle.actual-velocity => cia402pv.Spindle.drv-actual-velocity
 
 #from cia402pv to servo(ethercat) 
 net Spindle-controlword         cia402pv.Spindle.controlword         => lcec.0.Spindle.cia-controlword
@@ -135,4 +136,3 @@ net spindle-enable            => cia402pv.Spindle.run
 net spindle-at-speed          <= cia402pv.Spindle.stat-at-speed
 net spindle-vel-cmd-rps-abs   => cia402pv.Spindle.velocity-cmd
 net spindle-vel-fb-rps        => cia402pv.Spindle.velocity-fb
-
